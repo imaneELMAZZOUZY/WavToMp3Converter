@@ -22,7 +22,7 @@ func ManageDb(dbChan <-chan models.ConversionRecord) {
 	}
 
 	// Open or create the SQLite database file
-	db, err := sql.Open("sqlite", "./conversions.db")
+	db, err := sql.Open("sqlite", "conversions.db")
 	if err != nil {
 		fmt.Println("Error opening SQLite database:", err)
 		return
