@@ -70,7 +70,7 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 	startTime := time.Now()
 	// Prepare the FFmpeg command
 	cmd := exec.Command(
-		"ffmpeg",
+		ffmpegPath,
 		"-i", directoryToWatch+"/"+jsonConfig.InputFile,
 		"-codec:a", jsonConfig.Codec,
 		"-b:a", jsonConfig.Bitrate,
