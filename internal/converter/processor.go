@@ -5,10 +5,11 @@ import (
 	"os"
 	"os/exec"
 	"time"
-
+	"path/filepath"
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
 	"github.com/joho/godotenv"
 )
+
 
 func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
@@ -48,11 +49,23 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		<-semaphore
 	}()
 
+
+
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file")
 	}
 	directoryToWatch := os.Getenv("DIRECTORY_TO_WATCH")
+
+
+	// Define the path to ffmpeg.exe in the assets folder
+	ffmpegPath := filepath.Join("bin", "ffmpeg.exe")
+
+	// Check if ffmpeg.exe exists
+	if _, err := os.Stat(ffmpegPath); os.IsNotExist(err) {
+		fmt.Printf("ffmpeg.exe not found in %s\n", ffmpegPath)
+		return
+	}
 
 	startTime := time.Now()
 	// Prepare the FFmpeg command
