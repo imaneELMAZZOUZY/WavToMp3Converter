@@ -2,7 +2,6 @@ package main
 
 import (
 	"sync"
-
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/converter"
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
 )

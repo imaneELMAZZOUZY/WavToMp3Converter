@@ -1,0 +1,8 @@
+{
+    "input_file": "jupiter.wav",
+    "output_file": "jupiter.mp3",
+    "codec": "libmp3lame",
+    "bitrate": "192k",
+    "sample_rate": "44100",
+    "channels": "2"
+}
