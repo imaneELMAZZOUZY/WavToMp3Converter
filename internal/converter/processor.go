@@ -21,7 +21,7 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 			sm.Mux.Lock()
 
-			// process one item from the map
+			// Process one item from the map
 			for key, value := range sm.Map {
 
 				delete(sm.Map, key)
@@ -33,6 +33,7 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 				break
 			}
+
 			sm.Mux.Unlock()
 
 		}
@@ -49,14 +50,11 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		<-semaphore
 	}()
 
-
-
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file")
 	}
 	directoryToWatch := os.Getenv("DIRECTORY_TO_WATCH")
-
 
 	// Define the path to ffmpeg.exe in the assets folder
 	ffmpegPath := filepath.Join("bin", "ffmpeg.exe")
@@ -106,7 +104,7 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		Timestamp:        time.Now().Format(time.RFC3339),
 	}
 
-	// send to channel
+	// Send to channel
 	dbChan <- conversionRecord
 
 }

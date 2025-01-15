@@ -13,7 +13,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// monitor a directory for .json and .wav files and update the shared map.
+// Monitor a directory for .json and .wav files and update the shared map.
 func Watch(sm *models.SharedMap) {
 
 	err := godotenv.Load()
@@ -21,6 +21,7 @@ func Watch(sm *models.SharedMap) {
 		fmt.Println("Error loading .env file")
 	}
 	directoryToWatch := os.Getenv("DIRECTORY_TO_WATCH")
+	
 	// Create a new watcher
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -41,7 +42,7 @@ func Watch(sm *models.SharedMap) {
 	for {
 		select {
 		case event, ok := <-watcher.Events:
-			// if the channel is empty and closed
+			// If the channel is empty and closed
 			if !ok {
 				return
 			}
@@ -49,7 +50,7 @@ func Watch(sm *models.SharedMap) {
 			// Handle creation events
 			if event.Op&fsnotify.Create == fsnotify.Create {
 
-				// getting the file name and extension
+				// Getting the file name and extension
 				filebase := filepath.Base(event.Name)
 				filename, ext := strings.Split(filebase, ".")[0], strings.Split(filebase, ".")[1]
 
