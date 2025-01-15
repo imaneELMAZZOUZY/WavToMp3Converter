@@ -12,10 +12,10 @@ import (
 // DB Goroutine that listens to dbChan and inserts conversion records into SQLite
 func ManageDb(dbChan <-chan models.ConversionRecord) {
 
-	// Define the path to ffmpeg.exe in the assets folder
+	// Define the path to sqlite.exe in the assets folder
 	sqlitePath := filepath.Join("bin", "sqlite3.exe")
 
-	// Check if ffmpeg.exe exists
+	// Check if sqlite.exe exists
 	if _, err := os.Stat(sqlitePath); os.IsNotExist(err) {
 		fmt.Printf("sqlite3.exe not found in %s\n", sqlitePath)
 		return

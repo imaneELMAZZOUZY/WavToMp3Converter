@@ -20,6 +20,7 @@ type ConversionConfig struct {
 	Channels   string `json:"channels"`
 }
 
+// Record struct to hold the values to be inserted into the database
 type ConversionRecord struct {
 	InputFile        string
 	OutputFile       string
