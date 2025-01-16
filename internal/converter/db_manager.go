@@ -86,20 +86,22 @@ func connectDB() (*sql.DB , error) {
 	return db, nil
 }
 
+// GetRecords retrieves conversion records from the database based on the provided status.
+// If status is an empty string, it retrieves all records.
 func GetRecords(status string) ([]models.ConversionRecord, error) {
 
-	db , err:= connectDB()
+	db, err := connectDB()
 	if err != nil {
 		fmt.Println("Error connecting to database:", err)
 		return nil, err
 	}
 	defer db.Close()
 
-	// Query the database for all records
+	// Query the database for records based on the status
 	var rows *sql.Rows
-	if status == ""{
+	if status == "" {
 		rows, err = db.Query("SELECT * FROM conversion_records")
-	} else{
+	} else {
 		rows, err = db.Query("SELECT * FROM conversion_records WHERE conversion_status = ?", status)
 	}
 
@@ -109,12 +111,11 @@ func GetRecords(status string) ([]models.ConversionRecord, error) {
 	}
 	defer rows.Close()
 
+	// Iterate over the result set and scan each row into a ConversionRecord
 	var records []models.ConversionRecord
 	for rows.Next() {
-
 		var record models.ConversionRecord
-		
-		err := rows.Scan(&record.Id,&record.InputFile, &record.OutputFile, &record.Codec,
+		err := rows.Scan(&record.Id, &record.InputFile, &record.OutputFile, &record.Codec,
 			&record.Bitrate, &record.SampleRate, &record.Channels, &record.ConversionStatus,
 			&record.StartTime, &record.EndTime)
 		if err != nil {
