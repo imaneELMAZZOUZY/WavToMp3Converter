@@ -29,6 +29,6 @@ type ConversionRecord struct {
 	SampleRate       string
 	Channels         string
 	ConversionStatus string
-	Duration         string
-	Timestamp        string
+	StartTime        string
+	EndTime          string
 }

@@ -40,8 +40,8 @@ func ManageDb(dbChan <-chan models.ConversionRecord) {
         sample_rate TEXT,
         channels TEXT,
         conversion_status TEXT,
-        duration TEXT,
-        timestamp TEXT
+        start_time TEXT,
+        end_time TEXT
     );
     `
 	_, err = db.Exec(createTableSQL)
@@ -61,13 +61,13 @@ func ManageDb(dbChan <-chan models.ConversionRecord) {
             sample_rate,
             channels,
             conversion_status,
-            duration,
-            timestamp
+            start_time,
+            end_time
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
 		_, err := db.Exec(insertSQL, record.InputFile, record.OutputFile, record.Codec,
 			record.Bitrate, record.SampleRate, record.Channels, record.ConversionStatus,
-			record.Duration, record.Timestamp)
+			record.StartTime, record.EndTime)
 		if err != nil {
 			fmt.Println("Error inserting record into database:", err)
 		} else {

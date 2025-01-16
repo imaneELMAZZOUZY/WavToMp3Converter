@@ -89,7 +89,8 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		fmt.Println("Conversion successful! Output file:", jsonConfig.OutputFile)
 	}
 
-	duration := time.Since(startTime).String()
+	// duration := time.Since(startTime).String()
+
 
 	// Prepare conversion record
 	conversionRecord := models.ConversionRecord{
@@ -100,8 +101,8 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		SampleRate:       jsonConfig.SampleRate,
 		Channels:         jsonConfig.Channels,
 		ConversionStatus: conversionStatus,
-		Duration:         duration,
-		Timestamp:        time.Now().Format(time.RFC3339),
+		StartTime:         startTime.Format(time.RFC3339),
+		EndTime:        time.Now().Format(time.RFC3339),
 	}
 
 	// Send to channel
