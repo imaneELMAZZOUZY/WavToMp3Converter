@@ -12,19 +12,9 @@ import (
 // DB Goroutine that listens to dbChan and inserts conversion records into SQLite
 func ManageDb(dbChan <-chan models.ConversionRecord) {
 
-	// Define the path to sqlite.exe in the assets folder
-	sqlitePath := filepath.Join("bin", "sqlite3.exe")
-
-	// Check if sqlite.exe exists
-	if _, err := os.Stat(sqlitePath); os.IsNotExist(err) {
-		fmt.Printf("sqlite3.exe not found in %s\n", sqlitePath)
-		return
-	}
-
-	// Open or create the SQLite database file
-	db, err := sql.Open("sqlite", "conversions.db")
+	db , err:= connectDB()
 	if err != nil {
-		fmt.Println("Error opening SQLite database:", err)
+		fmt.Println("Error connecting to database:", err)
 		return
 	}
 	defer db.Close()
@@ -75,3 +65,69 @@ func ManageDb(dbChan <-chan models.ConversionRecord) {
 		}
 	}
 }
+
+
+func connectDB() (*sql.DB , error) {
+	// Define the path to sqlite.exe in the assets folder
+	sqlitePath := filepath.Join("bin", "sqlite3.exe")
+
+	// Check if sqlite.exe exists
+	if _, err := os.Stat(sqlitePath); os.IsNotExist(err) {
+		fmt.Printf("sqlite3.exe not found in %s\n", sqlitePath)
+		return nil, err
+	}
+
+	// Open or create the SQLite database file
+	db, err := sql.Open("sqlite", "conversions.db")
+	if err != nil {
+		fmt.Println("Error opening SQLite database:", err)
+		return nil, err
+	}
+	return db, nil
+}
+
+func GetRecords(status string) ([]models.ConversionRecord, error) {
+
+	db , err:= connectDB()
+	if err != nil {
+		fmt.Println("Error connecting to database:", err)
+		return nil, err
+	}
+	defer db.Close()
+
+	// Query the database for all records
+	var rows *sql.Rows
+	if status == ""{
+		rows, err = db.Query("SELECT * FROM conversion_records")
+	} else{
+		rows, err = db.Query("SELECT * FROM conversion_records WHERE conversion_status = ?", status)
+	}
+
+	if err != nil {
+		fmt.Println("Error querying database:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var records []models.ConversionRecord
+	for rows.Next() {
+
+		var record models.ConversionRecord
+		
+		err := rows.Scan(&record.Id,&record.InputFile, &record.OutputFile, &record.Codec,
+			&record.Bitrate, &record.SampleRate, &record.Channels, &record.ConversionStatus,
+			&record.StartTime, &record.EndTime)
+		if err != nil {
+			fmt.Println("Error scanning record:", err)
+			return nil, err
+		}
+		records = append(records, record)
+	}
+	return records, nil
+}
+
+
+
+
+
+

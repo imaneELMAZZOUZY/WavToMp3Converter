@@ -23,10 +23,16 @@ converts the `.wav` files to `.mp3` using FFmpeg and the configuration from `.js
     ```sh
     go run cmd/main.go
     ```
+    The application will be running on port 5000
 
-2. Move the samples in `samples` directory into `samples/Watched_folder` directory
+2. To change the port , you can use the flag -port :
+ ```sh 
+     go run ./cmd -port ":port"
+ ```
 
-3. You can change the path of the watched directory in .env file
+3. Move the samples in `samples` directory into `samples/Watched_folder` directory
+
+4. To change the path of the watched directory, update DIRECTORY_TO_WATCH in .env file
 
 ## JSON Configuration
 

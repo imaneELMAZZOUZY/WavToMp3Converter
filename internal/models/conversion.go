@@ -22,6 +22,7 @@ type ConversionConfig struct {
 
 // Record struct to hold the values to be inserted into the database
 type ConversionRecord struct {
+	Id               int
 	InputFile        string
 	OutputFile       string
 	Codec            string
@@ -32,3 +33,5 @@ type ConversionRecord struct {
 	StartTime        string
 	EndTime          string
 }
+
+

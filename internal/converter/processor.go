@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"time"
 	"path/filepath"
+	"time"
+	"sync"
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
 	"github.com/joho/godotenv"
 )
 
+var CurrentJobs = &models.SharedMap{
+	Map: make(map[string]models.ConversionConfig),
+	Mux: &sync.Mutex{},
+}
 
 func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
@@ -26,6 +31,10 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 				delete(sm.Map, key)
 
+				CurrentJobs.Mux.Lock()
+				CurrentJobs.Map[value.InputFile] = value
+				CurrentJobs.Mux.Unlock()
+
 				// Acquire a semaphore before starting a job
 				semaphore <- struct{}{}
 
@@ -38,7 +47,7 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 		}
 
-		time.Sleep(time.Millisecond * 20)
+		time.Sleep(time.Second * 10) 
 	}
 
 }
@@ -46,6 +55,13 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.ConversionRecord, semaphore chan struct{}) {
 
 	defer func() {
+
+		time.Sleep(time.Second * 10)
+
+		CurrentJobs.Mux.Lock()
+		delete(CurrentJobs.Map, jsonConfig.InputFile)
+		CurrentJobs.Mux.Unlock()
+
 		// Release a slot in the semaphore after job is done
 		<-semaphore
 	}()
@@ -83,14 +99,11 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 	var conversionStatus string
 	if err != nil {
 		fmt.Println("Error executing FFmpeg command:", err)
-		conversionStatus = "Failed"
+		conversionStatus = "failed"
 	} else {
-		conversionStatus = "Successful"
+		conversionStatus = "successful"
 		fmt.Println("Conversion successful! Output file:", jsonConfig.OutputFile)
 	}
-
-	// duration := time.Since(startTime).String()
-
 
 	// Prepare conversion record
 	conversionRecord := models.ConversionRecord{
@@ -101,8 +114,8 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		SampleRate:       jsonConfig.SampleRate,
 		Channels:         jsonConfig.Channels,
 		ConversionStatus: conversionStatus,
-		StartTime:         startTime.Format(time.RFC3339),
-		EndTime:        time.Now().Format(time.RFC3339),
+		StartTime:        startTime.Format(time.RFC3339),
+		EndTime:          time.Now().Format(time.RFC3339),
 	}
 
 	// Send to channel
