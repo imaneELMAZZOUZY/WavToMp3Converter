@@ -10,7 +10,6 @@ import (
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
 )
 
-
 var sharedMap = &models.SharedMap{
 	Map: make(map[string]models.ConversionConfig),
 	Mux: &sync.Mutex{},
@@ -18,12 +17,10 @@ var sharedMap = &models.SharedMap{
 
 func main() {
 
-	
 	port:= flag.String("port", ":5000", "HTTP network address")
 	flag.Parse()
 
 	dbChan := make(chan models.ConversionRecord, 10)
-
 
 	go converter.Watch(sharedMap)
 
@@ -34,7 +31,5 @@ func main() {
 	log.Printf("Starting server on %s", *port)
 	err := http.ListenAndServe(*port, routes())
 	log.Fatal(err)
-
-
 
 }

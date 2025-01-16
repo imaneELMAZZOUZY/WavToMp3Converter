@@ -1,15 +1,18 @@
 package converter
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"time"
 	"sync"
+	"time"
+
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
-	"github.com/joho/godotenv"
 )
+
+var directoryToWatch = flag.String("d", "samples/Watched_folder", "Directory to watch for changes")
 
 var CurrentJobs = &models.SharedMap{
 	Map: make(map[string]models.ConversionConfig),
@@ -47,7 +50,7 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 		}
 
-		time.Sleep(time.Second * 10) 
+		time.Sleep(time.Second * 10)
 	}
 
 }
@@ -66,12 +69,6 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		<-semaphore
 	}()
 
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file")
-	}
-	directoryToWatch := os.Getenv("DIRECTORY_TO_WATCH")
-
 	// Define the path to ffmpeg.exe in the assets folder
 	ffmpegPath := filepath.Join("bin", "ffmpeg.exe")
 
@@ -85,16 +82,16 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 	// Prepare the FFmpeg command
 	cmd := exec.Command(
 		ffmpegPath,
-		"-i", directoryToWatch+"/"+jsonConfig.InputFile,
+		"-i", *directoryToWatch+"/"+jsonConfig.InputFile,
 		"-codec:a", jsonConfig.Codec,
 		"-b:a", jsonConfig.Bitrate,
 		"-ar", jsonConfig.SampleRate,
 		"-ac", jsonConfig.Channels,
-		directoryToWatch+"/"+jsonConfig.OutputFile,
+		*directoryToWatch+"/"+jsonConfig.OutputFile,
 	)
 
 	// Run the command
-	err = cmd.Run()
+	err := cmd.Run()
 
 	var conversionStatus string
 	if err != nil {

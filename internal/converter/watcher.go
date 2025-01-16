@@ -10,17 +10,10 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
-	"github.com/joho/godotenv"
 )
 
 // Monitor a directory for .json and .wav files and update the shared map.
 func Watch(sm *models.SharedMap) {
-
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file")
-	}
-	directoryToWatch := os.Getenv("DIRECTORY_TO_WATCH")
 	
 	// Create a new watcher
 	watcher, err := fsnotify.NewWatcher()
@@ -30,12 +23,12 @@ func Watch(sm *models.SharedMap) {
 
 	defer watcher.Close()
 
-	err = watcher.Add(directoryToWatch)
+	err = watcher.Add(*directoryToWatch)
 	if err != nil {
 		fmt.Println("Error adding directory to watcher:", err)
 	}
 
-	fmt.Printf("Watching directory: %s\n", directoryToWatch)
+	fmt.Printf("Watching directory: %s\n", *directoryToWatch)
 
 	// Track file events by base filename
 	fileCreationCount := make(map[string]int)
@@ -61,7 +54,7 @@ func Watch(sm *models.SharedMap) {
 
 				// When both .wav and .json files are created, process them
 				if fileCreationCount[filename] == 2 {
-					config, err := jsonToStruct(directoryToWatch + "/" + filename + ".json")
+					config, err := jsonToStruct(*directoryToWatch + "/" + filename + ".json")
 					if err != nil {
 						fmt.Println(err)
 					}
