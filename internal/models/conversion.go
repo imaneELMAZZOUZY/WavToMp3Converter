@@ -34,4 +34,9 @@ type ConversionRecord struct {
 	EndTime          string
 }
 
+type CurrentConfig struct {
+	Config ConversionConfig
+	StartTime string
+}
+
 

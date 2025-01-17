@@ -14,8 +14,11 @@ import (
 
 var directoryToWatch = flag.String("d", "samples/Watched_folder", "Directory to watch for changes")
 
-var CurrentJobs = &models.SharedMap{
-	Map: make(map[string]models.ConversionConfig),
+var CurrentJobs = &struct {
+	Map map[string]models.CurrentConfig
+	Mux *sync.Mutex
+}{
+	Map: make(map[string]models.CurrentConfig),
 	Mux: &sync.Mutex{},
 }
 
@@ -34,11 +37,6 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 				delete(sm.Map, key)
 
-				CurrentJobs.Mux.Lock()
-				CurrentJobs.Map[value.InputFile] = value
-				CurrentJobs.Mux.Unlock()
-
-				// Acquire a semaphore before starting a job
 				semaphore <- struct{}{}
 
 				go jobConverter(value, dbChan, semaphore)
@@ -50,7 +48,7 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 		}
 
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second * 2)
 	}
 
 }
@@ -69,6 +67,16 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		<-semaphore
 	}()
 
+	startTime := time.Now()
+
+	CurrentJobs.Mux.Lock()
+
+	CurrentJobs.Map[jsonConfig.InputFile] = models.CurrentConfig{
+		Config:    jsonConfig,
+		StartTime: startTime.Format(time.RFC3339),
+	}
+	CurrentJobs.Mux.Unlock()
+
 	// Define the path to ffmpeg.exe in the assets folder
 	ffmpegPath := filepath.Join("bin", "ffmpeg.exe")
 
@@ -78,7 +86,6 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		return
 	}
 
-	startTime := time.Now()
 	// Prepare the FFmpeg command
 	cmd := exec.Command(
 		ffmpegPath,
