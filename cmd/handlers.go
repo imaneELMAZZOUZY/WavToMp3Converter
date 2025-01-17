@@ -22,7 +22,7 @@ func currentJobsHandler(w http.ResponseWriter, r *http.Request) {
 // It encodes the waiting jobs to JSON and writes it to the response.
 func waitingJobsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(converter.CurrentJobs.Map)
+	err := json.NewEncoder(w).Encode(sharedMap.Map)
 	if err != nil {
 		http.Error(w, "Error encoding waiting jobs to JSON", http.StatusInternalServerError)
 	}
