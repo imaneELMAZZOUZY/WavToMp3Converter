@@ -17,14 +17,14 @@ var sharedMap = &models.SharedMap{
 
 func main() {
 
-	port:= flag.String("port", ":5000", "HTTP network address")
+	port := flag.String("port", ":5000", "HTTP network address")
 	flag.Parse()
 
 	dbChan := make(chan models.ConversionRecord, 10)
 
 	go converter.Watch(sharedMap)
 
-	go converter.Process(sharedMap, dbChan)
+	go converter.Process(converter.NewJobConverter(), sharedMap, dbChan)
 
 	go converter.ManageDb(dbChan)
 

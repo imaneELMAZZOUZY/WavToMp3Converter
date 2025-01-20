@@ -4,7 +4,6 @@ go 1.23.4
 
 require (
 	github.com/fsnotify/fsnotify v1.8.0
-	github.com/gorilla/mux v1.8.1
 	github.com/stretchr/testify v1.10.0
 	modernc.org/sqlite v1.34.4
 )

@@ -80,7 +80,9 @@ func isFileExist(path string) bool {
 	return !os.IsNotExist(err)
 }
 
-func runCmd(name string, args []string) error {
+type cmdRunner struct{}
+
+func (cmdRunner) Run(name string, args []string) error {
 	cmd := exec.Command(
 		name,
 		args...,
@@ -98,6 +100,13 @@ type CmdRunner interface {
 type JobConverter struct {
 	IsFileExist FileChecker
 	CmdRunner   CmdRunner
+}
+
+func NewJobConverter() JobConverter {
+	return JobConverter{
+		IsFileExist: isFileExist,
+		CmdRunner:   cmdRunner{},
+	}
 }
 
 func (j JobConverter) Run(jsonConfig models.ConversionConfig) (models.ConversionRecord, error) {
