@@ -54,7 +54,7 @@ func Watch(sm *models.SharedMap) {
 				 filename := strings.TrimSuffix(filebase, ext)
 
 				// Track the number of files created with the same base name (ensure .wav and .json are present)
-				if ext == "json" || ext == "wav" {
+				if ext == ".json" || ext == ".wav" {
 					fileCreationCount[filename]++
 				}
 
@@ -71,8 +71,7 @@ func Watch(sm *models.SharedMap) {
 					sm.Mux.Unlock()
 
 					delete(fileCreationCount, filename)
-				}
-
+				}	
 			}
 
 		case err, ok := <-watcher.Errors:
