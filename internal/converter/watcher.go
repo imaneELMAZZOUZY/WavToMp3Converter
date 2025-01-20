@@ -26,6 +26,7 @@ func Watch(sm *models.SharedMap) {
 	err = watcher.Add(*directoryToWatch)
 	if err != nil {
 		fmt.Println("Error adding directory to watcher:", err)
+		return
 	}
 
 	fmt.Printf("Watching directory: %s\n", *directoryToWatch)
@@ -51,11 +52,6 @@ func Watch(sm *models.SharedMap) {
 					 continue
 				 }
 				 filename := strings.TrimSuffix(filebase, ext)
-
-				 fmt.Println("FILEbasE",filebase)
-				 fmt.Println("Filename",filename)
-				 fmt.Println("ext",ext)
-				 
 
 				// Track the number of files created with the same base name (ensure .wav and .json are present)
 				if ext == "json" || ext == "wav" {
