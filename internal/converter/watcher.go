@@ -26,7 +26,6 @@ func Watch(sm *models.SharedMap) {
 	err = watcher.Add(*directoryToWatch)
 	if err != nil {
 		fmt.Println("Error adding directory to watcher:", err)
-		return
 	}
 
 	fmt.Printf("Watching directory: %s\n", *directoryToWatch)
@@ -46,15 +45,10 @@ func Watch(sm *models.SharedMap) {
 
 				// Getting the file name and extension
 				filebase := filepath.Base(event.Name)
-				ext := filepath.Ext(filebase)
-				 if ext == "" {
-					 fmt.Println("File does not have an extension:", filebase)
-					 continue
-				 }
-				 filename := strings.TrimSuffix(filebase, ext)
+				filename, ext := strings.Split(filebase, ".")[0], strings.Split(filebase, ".")[1]
 
 				// Track the number of files created with the same base name (ensure .wav and .json are present)
-				if ext == ".json" || ext == ".wav" {
+				if ext == "json" || ext == "wav" {
 					fileCreationCount[filename]++
 				}
 
@@ -71,7 +65,8 @@ func Watch(sm *models.SharedMap) {
 					sm.Mux.Unlock()
 
 					delete(fileCreationCount, filename)
-				}	
+				}
+
 			}
 
 		case err, ok := <-watcher.Errors:

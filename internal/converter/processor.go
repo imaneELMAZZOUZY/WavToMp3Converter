@@ -1,6 +1,7 @@
 package converter
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -14,6 +15,8 @@ import (
 
 var directoryToWatch = flag.String("d", "samples/Watched_folder", "Directory to watch for changes")
 
+var ErrFFMPEGNotFound = errors.New("ffmpeg.exe not found")
+
 var CurrentJobs = &struct {
 	Map map[string]models.CurrentConfig
 	Mux *sync.Mutex
@@ -22,7 +25,7 @@ var CurrentJobs = &struct {
 	Mux: &sync.Mutex{},
 }
 
-func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
+func Process(j JobConverter, sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 	// Semaphore to limit the number of concurrent jobs
 	semaphore := make(chan struct{}, 5) // max 5
@@ -39,7 +42,26 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 				semaphore <- struct{}{}
 
-				go jobConverter(value, dbChan, semaphore)
+				go func() {
+					defer func() {
+
+						time.Sleep(time.Second * 10)
+
+						CurrentJobs.Mux.Lock()
+						delete(CurrentJobs.Map, value.InputFile)
+						CurrentJobs.Mux.Unlock()
+
+						// Release a slot in the semaphore after job is done
+						<-semaphore
+					}()
+
+					record, err := j.Run(value)
+					if err != nil {
+						fmt.Println("error while running conversion process: ", err)
+						return
+					}
+					dbChan <- record
+				}()
 
 				break
 			}
@@ -53,20 +75,32 @@ func Process(sm *models.SharedMap, dbChan chan<- models.ConversionRecord) {
 
 }
 
-func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.ConversionRecord, semaphore chan struct{}) {
+func isFileExist(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
+}
 
-	defer func() {
+func runCmd(name string, args []string) error {
+	cmd := exec.Command(
+		name,
+		args...,
+	)
 
-		time.Sleep(time.Second * 10)
+	// Run the command
+	return cmd.Run()
+}
 
-		CurrentJobs.Mux.Lock()
-		delete(CurrentJobs.Map, jsonConfig.InputFile)
-		CurrentJobs.Mux.Unlock()
+type FileChecker func(path string) bool
+type CmdRunner interface {
+	Run(name string, args []string) error
+}
 
-		// Release a slot in the semaphore after job is done
-		<-semaphore
-	}()
+type JobConverter struct {
+	IsFileExist FileChecker
+	CmdRunner   CmdRunner
+}
 
+func (j JobConverter) Run(jsonConfig models.ConversionConfig) (models.ConversionRecord, error) {
 	startTime := time.Now()
 
 	CurrentJobs.Mux.Lock()
@@ -81,24 +115,22 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 	ffmpegPath := filepath.Join("bin", "ffmpeg.exe")
 
 	// Check if ffmpeg.exe exists
-	if _, err := os.Stat(ffmpegPath); os.IsNotExist(err) {
-		fmt.Printf("ffmpeg.exe not found in %s\n", ffmpegPath)
-		return
+	if !j.IsFileExist(ffmpegPath) {
+		return models.ConversionRecord{}, fmt.Errorf("%w in %s", ErrFFMPEGNotFound, ffmpegPath)
 	}
 
-	// Prepare the FFmpeg command
-	cmd := exec.Command(
+	// Prepare and run the FFmpeg command
+	err := j.CmdRunner.Run(
 		ffmpegPath,
-		"-i", *directoryToWatch+"/"+jsonConfig.InputFile,
-		"-codec:a", jsonConfig.Codec,
-		"-b:a", jsonConfig.Bitrate,
-		"-ar", jsonConfig.SampleRate,
-		"-ac", jsonConfig.Channels,
-		*directoryToWatch+"/"+jsonConfig.OutputFile,
+		[]string{
+			"-i", *directoryToWatch + "/" + jsonConfig.InputFile,
+			"-codec:a", jsonConfig.Codec,
+			"-b:a", jsonConfig.Bitrate,
+			"-ar", jsonConfig.SampleRate,
+			"-ac", jsonConfig.Channels,
+			*directoryToWatch + "/" + jsonConfig.OutputFile,
+		},
 	)
-
-	// Run the command
-	err := cmd.Run()
 
 	var conversionStatus string
 	if err != nil {
@@ -122,7 +154,6 @@ func jobConverter(jsonConfig models.ConversionConfig, dbChan chan<- models.Conve
 		EndTime:          time.Now().Format(time.RFC3339),
 	}
 
-	// Send to channel
-	dbChan <- conversionRecord
-
+	// Return conversion result
+	return conversionRecord, nil
 }
