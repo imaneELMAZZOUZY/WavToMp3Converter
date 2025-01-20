@@ -26,6 +26,7 @@ func Watch(sm *models.SharedMap) {
 	err = watcher.Add(*directoryToWatch)
 	if err != nil {
 		fmt.Println("Error adding directory to watcher:", err)
+		return
 	}
 
 	fmt.Printf("Watching directory: %s\n", *directoryToWatch)
