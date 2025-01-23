@@ -1,0 +1,5 @@
+{
+    "input_file": "idk.wav",
+    "output_file": "idk.mp3",
+    "codec": "libmp3lame"
+}

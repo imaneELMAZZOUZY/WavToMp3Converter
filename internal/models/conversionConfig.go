@@ -10,6 +10,11 @@ type SharedMap struct {
 	Mux *sync.Mutex
 }
 
+type CurrentJobs struct {
+	Map map[string]CurrentConfig
+	Mux *sync.Mutex
+}
+
 // Configuration struct to hold the values from the JSON file
 type ConversionConfig struct {
 	InputFile  string `json:"input_file"`
@@ -21,18 +26,7 @@ type ConversionConfig struct {
 }
 
 // Record struct to hold the values to be inserted into the database
-type ConversionRecord struct {
-	Id               int
-	InputFile        string
-	OutputFile       string
-	Codec            string
-	Bitrate          string
-	SampleRate       string
-	Channels         string
-	ConversionStatus string
-	StartTime        string
-	EndTime          string
-}
+
 
 type CurrentConfig struct {
 	Config ConversionConfig

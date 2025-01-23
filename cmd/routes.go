@@ -5,12 +5,12 @@ import (
 )
 
 
-func routes() http.Handler {
+func (appDep *appDep) routes() http.Handler {
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/jobs/current", currentJobsHandler)
-	mux.HandleFunc("GET /api/jobs/finished", finishedJobsHandler)
-	mux.HandleFunc("GET /api/jobs/waiting", waitingJobsHandler)
+	mux.HandleFunc("GET /api/jobs/current", appDep.currentJobsHandler)
+	mux.HandleFunc("GET /api/jobs/finished", appDep.finishedJobsHandler)
+	mux.HandleFunc("GET /api/jobs/waiting", appDep.waitingJobsHandler)
 	return mux
 
 }
