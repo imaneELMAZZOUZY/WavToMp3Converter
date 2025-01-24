@@ -23,7 +23,8 @@ type appDep struct {
 	conversionRecords models.ConversionRecordInt
 }
 
-var DirectoryToWatch  = flag.String("d", "samples/Watched_folder", "Directory to watch for changes")
+var DirectoryToWatch  = flag.String("i", "samples/Watched_folder", "Directory to watch for changes")
+var OutputDirectory  = flag.String("o", "samples/Output_folder", "Directory to store the mp3 files")
 
 func main() {
 

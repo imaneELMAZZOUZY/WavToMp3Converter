@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"os/exec"
 	"path/filepath"
@@ -18,15 +19,16 @@ func (appDep *appDep) Process(j JobConverter) {
 
 	for {
 
-		appDep.sharedMap.Range(func(key, val any) bool {
-			if key == nil {
+		appDep.sharedMap.Range(func(k, val any) bool {
+			if k == nil {
 				return false
 			}
-			appDep.sharedMap.Delete(key)
+			appDep.sharedMap.Delete(k)
 
 			semaphore <- struct{}{}
 
 			value := val.(models.ConversionConfig)
+			key := k.(string)
 
 			go func() {
 
@@ -53,6 +55,16 @@ func (appDep *appDep) Process(j JobConverter) {
 				} else {
 					appDep.logger.Info("conversion successful!", "input_file", record.InputFile, "output_file", record.OutputFile)
 					appDep.dbChan <- record
+
+					err := os.Remove(*DirectoryToWatch + "/" + key + ".json")  
+					if err != nil {
+						appDep.logger.Error("error while removing json file :", "error", err)
+					}
+
+					err = os.Remove(*DirectoryToWatch + "/" + key + ".wav")  
+					if err != nil {
+						appDep.logger.Error("error while removing wav file :", "error", err)
+					}
 				}
 
 			}()
@@ -113,7 +125,7 @@ func (j JobConverter) Run(jsonConfig models.ConversionConfig, startTime string) 
 		"-b:a", jsonConfig.Bitrate,
 		"-ar", jsonConfig.SampleRate,
 		"-ac", jsonConfig.Channels,
-		*DirectoryToWatch + "/" + jsonConfig.OutputFile,
+		*OutputDirectory + "/" + jsonConfig.OutputFile,
 	})
 
 	var conversionStatus string
