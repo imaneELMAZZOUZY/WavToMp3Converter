@@ -60,9 +60,9 @@ func (appDep *appDep) Watch() {
 					}
 
 					// Update shared map with conversion configuration
-					appDep.sharedMap.Mux.Lock()
-					appDep.sharedMap.Map[filename] = config
-					appDep.sharedMap.Mux.Unlock()
+					
+					appDep.sharedMap.Store(filename, config) 
+					
 
 					delete(fileCreationCount, filename)
 				}	

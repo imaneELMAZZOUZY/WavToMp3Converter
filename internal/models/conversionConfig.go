@@ -1,19 +1,5 @@
 package models
 
-import (
-	"sync"
-)
-
-
-type SharedMap struct {
-	Map map[string]ConversionConfig
-	Mux *sync.Mutex
-}
-
-type CurrentJobs struct {
-	Map map[string]CurrentConfig
-	Mux *sync.Mutex
-}
 
 // Configuration struct to hold the values from the JSON file
 type ConversionConfig struct {

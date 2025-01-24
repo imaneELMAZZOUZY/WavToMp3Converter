@@ -13,18 +13,38 @@ import (
 
 func (appDep *appDep) currentJobsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(appDep.CurrentJobs.Map)
+
+	jobsMap := make(map[string]models.CurrentConfig)
+
+	appDep.CurrentJobs.Range(func(key, value interface{}) bool {
+		if v, ok := value.(models.CurrentConfig); ok {
+			jobsMap[key.(string)] = v
+		}
+		return true
+	})
+
+	err := json.NewEncoder(w).Encode(jobsMap)
 	if err != nil {
 		http.Error(w, "Error encoding current jobs to JSON", http.StatusInternalServerError)
 	}
-	
+
 }
 
 // waitingJobsHandler handles the request to get the waiting jobs.
 // It encodes the waiting jobs to JSON and writes it to the response.
 func (appDep *appDep) waitingJobsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(appDep.sharedMap.Map)
+
+	jobsMap := make(map[string]models.ConversionConfig)
+
+	appDep.sharedMap.Range(func(key, value interface{}) bool {
+		if v, ok := value.(models.ConversionConfig); ok {
+			jobsMap[key.(string)] = v
+		}
+		return true
+	})
+
+	err := json.NewEncoder(w).Encode(jobsMap)
 	if err != nil {
 		http.Error(w, "Error encoding waiting jobs to JSON", http.StatusInternalServerError)
 	}
@@ -58,7 +78,7 @@ func (appDep *appDep) finishedJobsHandler(w http.ResponseWriter, r *http.Request
 
 	// Encode the finished jobs to JSON and send it to the response writer
 	err = json.NewEncoder(w).Encode(finishedJobs)
-	
+
 	if err != nil {
 		http.Error(w, "Error encoding finished jobs to JSON", http.StatusInternalServerError)
 	}

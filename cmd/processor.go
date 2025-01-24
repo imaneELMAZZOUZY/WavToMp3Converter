@@ -2,18 +2,14 @@ package main
 
 import (
 	"fmt"
-	
+
 	"os/exec"
 	"path/filepath"
-	
+
 	"time"
 
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
 )
-
-
-
-
 
 func (appDep *appDep) Process(j JobConverter) {
 
@@ -21,59 +17,49 @@ func (appDep *appDep) Process(j JobConverter) {
 	semaphore := make(chan struct{}, 5) // max 5
 
 	for {
-		if len(appDep.sharedMap.Map) > 0 {
 
-			appDep.sharedMap.Mux.Lock()
+		appDep.sharedMap.Range(func(key, val any) bool {
+			if key == nil {
+				return false
+			}
+			appDep.sharedMap.Delete(key)
 
-			// Process one item from the map
-			for key, value := range appDep.sharedMap.Map {
+			semaphore <- struct{}{}
 
-				delete(appDep.sharedMap.Map, key)
+			value := val.(models.ConversionConfig)
 
-				semaphore <- struct{}{}
+			go func() {
 
-				go func() {
+				defer func() {
 
-					defer func() {
+					time.Sleep(time.Second * 10)
 
-						time.Sleep(time.Second * 10)
+					appDep.CurrentJobs.Delete(value.InputFile)
 
-						appDep.CurrentJobs.Mux.Lock()
-						delete(appDep.CurrentJobs.Map, value.InputFile)
-						appDep.CurrentJobs.Mux.Unlock()
-
-						// Release a slot in the semaphore after job is done
-						<-semaphore
-					}()
-
-					startTime := time.Now().Format(time.RFC3339)
-
-					appDep.CurrentJobs.Mux.Lock()
-
-					appDep.CurrentJobs.Map[value.InputFile] = models.CurrentConfig{
-						Config:    value,
-						StartTime: startTime,
-					}
-					appDep.CurrentJobs.Mux.Unlock()
-
-					record , err := j.Run(value,startTime)
-					if err != nil {
-						appDep.logger.Error("error while running conversion process :", "error", err)
-					} else {
-						appDep.logger.Info("conversion successful!", "input_file", record.InputFile, "output_file", record.OutputFile)
-						appDep.dbChan <- record
-					}
-				
-					
-
+					// Release a slot in the semaphore after job is done
+					<-semaphore
 				}()
 
-				break
-			}
+				startTime := time.Now().Format(time.RFC3339)
 
-			appDep.sharedMap.Mux.Unlock()
+				appDep.CurrentJobs.Store(value.InputFile, models.CurrentConfig{
+					Config:    value,
+					StartTime: startTime,
+				})
 
-		}
+				record, err := j.Run(value, startTime)
+				if err != nil {
+					appDep.logger.Error("error while running conversion process :", "error", err)
+				} else {
+					appDep.logger.Info("conversion successful!", "input_file", record.InputFile, "output_file", record.OutputFile)
+					appDep.dbChan <- record
+				}
+
+			}()
+
+			return false
+
+		})
 
 		time.Sleep(time.Second * 2)
 	}
@@ -100,7 +86,6 @@ type CmdRunner interface {
 type JobConverter struct {
 	IsFileExist FileChecker
 	CmdRunner   CmdRunner
-
 }
 
 func NewJobConverter() JobConverter {
@@ -110,7 +95,7 @@ func NewJobConverter() JobConverter {
 	}
 }
 
-func (j JobConverter) Run(jsonConfig models.ConversionConfig, startTime string) (models.ConversionRecord, error){
+func (j JobConverter) Run(jsonConfig models.ConversionConfig, startTime string) (models.ConversionRecord, error) {
 
 	// Define the path to ffmpeg.exe in the assets folder
 	ffmpegPath := filepath.Join("bin", "ffmpeg.exe")
@@ -121,15 +106,15 @@ func (j JobConverter) Run(jsonConfig models.ConversionConfig, startTime string) 
 	}
 
 	// Run the command
-	err := j.CmdRunner.Run(ffmpegPath,[]string{
-		"-i", 
-		*DirectoryToWatch+"/"+jsonConfig.InputFile,
+	err := j.CmdRunner.Run(ffmpegPath, []string{
+		"-i",
+		*DirectoryToWatch + "/" + jsonConfig.InputFile,
 		"-codec:a", jsonConfig.Codec,
 		"-b:a", jsonConfig.Bitrate,
 		"-ar", jsonConfig.SampleRate,
 		"-ac", jsonConfig.Channels,
-		*DirectoryToWatch+"/"+jsonConfig.OutputFile,
-       } )
+		*DirectoryToWatch + "/" + jsonConfig.OutputFile,
+	})
 
 	var conversionStatus string
 	if err != nil {
@@ -152,6 +137,6 @@ func (j JobConverter) Run(jsonConfig models.ConversionConfig, startTime string) 
 		EndTime:          time.Now().Format(time.RFC3339),
 	}
 
-	return conversionRecord,nil
+	return conversionRecord, nil
 
 }

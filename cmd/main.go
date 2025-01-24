@@ -17,8 +17,8 @@ import (
 
 type appDep struct {
 	logger            *slog.Logger
-	sharedMap         *models.SharedMap
-	CurrentJobs       *models.CurrentJobs
+	sharedMap         *sync.Map
+	CurrentJobs       *sync.Map
 	dbChan            chan models.ConversionRecord
 	conversionRecords models.ConversionRecordInt
 }
@@ -42,14 +42,8 @@ func main() {
 
 	appDep := &appDep{
 		logger: logger,
-		sharedMap: &models.SharedMap{
-			Map: make(map[string]models.ConversionConfig),
-			Mux: &sync.Mutex{},
-		},
-		CurrentJobs: &models.CurrentJobs{
-			Map: make(map[string]models.CurrentConfig),
-			Mux: &sync.Mutex{},
-		},
+		sharedMap: &sync.Map{},
+		CurrentJobs: &sync.Map{},
 		dbChan:            make(chan models.ConversionRecord, 10),
 		conversionRecords: &models.ConversionRecordModel{Db: db},
 
