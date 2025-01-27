@@ -1,11 +1,12 @@
-package main
+package app
 
 import (
 	"net/http"
+	
 )
 
 
-func (appDep *appDep) routes() http.Handler {
+func (appDep *AppDep) Routes() http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/jobs/current", appDep.currentJobsHandler)

@@ -9,22 +9,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync"
 
+	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/app"
+	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/helpers"
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
+	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/services"
+
 	_ "modernc.org/sqlite"
 )
 
-type appDep struct {
-	logger            *slog.Logger
-	sharedMap         *sync.Map
-	CurrentJobs       *sync.Map
-	dbChan            chan models.ConversionRecord
-	conversionRecords models.ConversionRecordInt
-}
 
-var DirectoryToWatch  = flag.String("i", "samples/Watched_folder", "Directory to watch for changes")
-var OutputDirectory  = flag.String("o", "samples/Output_folder", "Directory to store the mp3 files")
 
 func main() {
 
@@ -41,25 +35,19 @@ func main() {
 	}
 	defer db.Close()
 
-	appDep := &appDep{
-		logger: logger,
-		sharedMap: &sync.Map{},
-		CurrentJobs: &sync.Map{},
-		dbChan:            make(chan models.ConversionRecord, 10),
-		conversionRecords: &models.ConversionRecordModel{Db: db},
+	conversionRecords := &models.ConversionRecordModel{Db: db}
+    appDep := app.NewAppDep(logger, conversionRecords)
 
-	}
+	go services.Watch(appDep)
 
-	go appDep.Watch()
-
-	go appDep.Process(NewJobConverter())
+	go services.Process(appDep,services.NewJobConverter())
 
 	go func() {
 
-		appDep.conversionRecords.CreateTable()
+		appDep.ConversionRecords.CreateTable()
 
-		for record := range appDep.dbChan {
-			err := appDep.conversionRecords.Insert(record.InputFile,
+		for record := range appDep.DbChan {
+			err := appDep.ConversionRecords.Insert(record.InputFile,
 				record.OutputFile, record.Codec, record.Bitrate,
 				record.SampleRate, record.Channels, record.ConversionStatus,
 				record.StartTime, record.EndTime)
@@ -74,7 +62,7 @@ func main() {
 	}()
 
 	log.Printf("Starting server on %s", *port)
-	err = http.ListenAndServe(*port, appDep.routes())
+	err = http.ListenAndServe(*port, appDep.Routes())
 	log.Fatal(err)
 
 }
@@ -83,8 +71,8 @@ func connectDB() (*sql.DB, error) {
 	// Define the path to sqlite.exe in the assets folder
 	sqlitePath := filepath.Join("bin", "sqlite3.exe")
 
-	if !isFileExist(sqlitePath) {
-		return nil, fmt.Errorf("%w in %s", ErrSqliteNotFound, sqlitePath)
+	if !helpers.IsFileExist(sqlitePath) {
+		return nil, fmt.Errorf("%w in %s", app.ErrSqliteNotFound, sqlitePath)
 	}
 	// Open or create the SQLite database file
 	db, err := sql.Open("sqlite", "conversions.db")

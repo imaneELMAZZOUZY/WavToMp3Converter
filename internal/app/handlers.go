@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"encoding/json"
@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
+
 )
 
 // currentJobsHandler handles the request to get the current jobs.
 // It encodes the current jobs to JSON and writes it to the response.
 
-func (appDep *appDep) currentJobsHandler(w http.ResponseWriter, r *http.Request) {
+func (appDep *AppDep) currentJobsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	jobsMap := make(map[string]models.CurrentConfig)
@@ -32,12 +33,12 @@ func (appDep *appDep) currentJobsHandler(w http.ResponseWriter, r *http.Request)
 
 // waitingJobsHandler handles the request to get the waiting jobs.
 // It encodes the waiting jobs to JSON and writes it to the response.
-func (appDep *appDep) waitingJobsHandler(w http.ResponseWriter, r *http.Request) {
+func (appDep *AppDep) waitingJobsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	jobsMap := make(map[string]models.ConversionConfig)
 
-	appDep.sharedMap.Range(func(key, value interface{}) bool {
+	appDep.SharedMap.Range(func(key, value interface{}) bool {
 		if v, ok := value.(models.ConversionConfig); ok {
 			jobsMap[key.(string)] = v
 		}
@@ -52,7 +53,7 @@ func (appDep *appDep) waitingJobsHandler(w http.ResponseWriter, r *http.Request)
 
 // finishedJobsHandler handles the request to get the finished jobs.
 // It filters the jobs based on the status query parameter and encodes the result to JSON.
-func (appDep *appDep) finishedJobsHandler(w http.ResponseWriter, r *http.Request) {
+func (appDep *AppDep) finishedJobsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// Get the status query parameter and convert it to lowercase
@@ -66,9 +67,9 @@ func (appDep *appDep) finishedJobsHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Invalid status", http.StatusBadRequest)
 		return
 	} else if status == "" {
-		finishedJobs, err = appDep.conversionRecords.GetAll()
+		finishedJobs, err = appDep.ConversionRecords.GetAll()
 	} else {
-		finishedJobs, err = appDep.conversionRecords.Get(status)
+		finishedJobs, err = appDep.ConversionRecords.Get(status)
 	}
 
 	if err != nil {

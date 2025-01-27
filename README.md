@@ -32,9 +32,14 @@ converts the `.wav` files to `.mp3` using FFmpeg and the configuration from `.js
 
 3. Move the samples in `samples` directory into `samples/Watched_folder` directory
 
-4. To change the path of the watched directory, you can use the flag -d :
+4. To change the path of the watched directory, you can use the flag -i :
  ```sh 
-     go run ./cmd -d "new_path"
+     go run ./cmd -i "new_path"
+ ```
+
+5. To change the path of the output directory, you can use the flag -o :
+ ```sh 
+     go run ./cmd -o "new_path"
  ```
 
 

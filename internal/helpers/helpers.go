@@ -1,4 +1,4 @@
-package main
+package helpers
 
 import (
 	"encoding/json"
@@ -9,12 +9,12 @@ import (
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
 )
 
-func isFileExist(path string) bool {
+func IsFileExist(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
 }
 
-func jsonToStruct(filepath string) (models.ConversionConfig, error) {
+func JsonToStruct(filepath string) (models.ConversionConfig, error) {
 	var config models.ConversionConfig
 
 	// Attempt to open the file with retries

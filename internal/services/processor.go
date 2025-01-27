@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"fmt"
@@ -9,21 +9,25 @@ import (
 
 	"time"
 
+	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/app"
+	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/helpers"
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
 )
 
-func (appDep *appDep) Process(j JobConverter) {
+
+
+func Process(appDep *app.AppDep, j JobConverter) {
 
 	// Semaphore to limit the number of concurrent jobs
 	semaphore := make(chan struct{}, 5) // max 5
 
 	for {
 
-		appDep.sharedMap.Range(func(k, val any) bool {
+		appDep.SharedMap.Range(func(k, val any) bool {
 			if k == nil {
 				return false
 			}
-			appDep.sharedMap.Delete(k)
+			appDep.SharedMap.Delete(k)
 
 			semaphore <- struct{}{}
 
@@ -51,19 +55,19 @@ func (appDep *appDep) Process(j JobConverter) {
 
 				record, err := j.Run(value, startTime)
 				if err != nil {
-					appDep.logger.Error("error while running conversion process :", "error", err)
+					appDep.Logger.Error("error while running conversion process :", "error", err)
 				} else {
-					appDep.logger.Info("conversion successful!", "input_file", record.InputFile, "output_file", record.OutputFile)
-					appDep.dbChan <- record
+					appDep.Logger.Info("conversion successful!", "input_file", record.InputFile, "output_file", record.OutputFile)
+					appDep.DbChan <- record
 
-					err := os.Remove(*DirectoryToWatch + "/" + key + ".json")  
+					err := os.Remove(*app.DirectoryToWatch + "/" + key + ".json")  
 					if err != nil {
-						appDep.logger.Error("error while removing json file :", "error", err)
+						appDep.Logger.Error("error while removing json file :", "error", err)
 					}
 
-					err = os.Remove(*DirectoryToWatch + "/" + key + ".wav")  
+					err = os.Remove(*app.DirectoryToWatch + "/" + key + ".wav")  
 					if err != nil {
-						appDep.logger.Error("error while removing wav file :", "error", err)
+						appDep.Logger.Error("error while removing wav file :", "error", err)
 					}
 				}
 
@@ -102,7 +106,7 @@ type JobConverter struct {
 
 func NewJobConverter() JobConverter {
 	return JobConverter{
-		IsFileExist: isFileExist,
+		IsFileExist: helpers.IsFileExist,
 		CmdRunner:   cmdRunner{},
 	}
 }
@@ -114,18 +118,18 @@ func (j JobConverter) Run(jsonConfig models.ConversionConfig, startTime string) 
 
 	// Check if ffmpeg.exe exists
 	if !j.IsFileExist(ffmpegPath) {
-		return models.ConversionRecord{}, fmt.Errorf("%w in %s", ErrFFMPEGNotFound, ffmpegPath)
+		return models.ConversionRecord{}, fmt.Errorf("%w in %s", app.ErrFFMPEGNotFound, ffmpegPath)
 	}
 
 	// Run the command
 	err := j.CmdRunner.Run(ffmpegPath, []string{
 		"-i",
-		*DirectoryToWatch + "/" + jsonConfig.InputFile,
+		*app.DirectoryToWatch + "/" + jsonConfig.InputFile,
 		"-codec:a", jsonConfig.Codec,
 		"-b:a", jsonConfig.Bitrate,
 		"-ar", jsonConfig.SampleRate,
 		"-ac", jsonConfig.Channels,
-		*OutputDirectory + "/" + jsonConfig.OutputFile,
+		*app.OutputDirectory + "/" + jsonConfig.OutputFile,
 	})
 
 	var conversionStatus string
