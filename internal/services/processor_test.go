@@ -1,13 +1,15 @@
 package services_test
 
 import (
-    "errors"
-    "testing"
-    "github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/app"
-    "github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
-    "github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/services"
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/mock"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/app"
+	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
+	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/services"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type cmdRunnerMock struct {
@@ -25,6 +27,13 @@ func createCmdRunnerMock(name string, args []string, err error) *cmdRunnerMock {
 }
 
 func TestJobConverterRun(t *testing.T) {
+
+    mockTime := "2023-01-01T12:00:00Z"
+	mockTimeProvider := func() time.Time {
+		parsedTime, _ := time.Parse(time.RFC3339, mockTime)
+		return parsedTime
+	}
+    
     type fields struct {
         FileChecker services.FileChecker
         CmdRunner   services.CmdRunner
@@ -70,6 +79,8 @@ func TestJobConverterRun(t *testing.T) {
                 Bitrate:          "__bitrate__",
                 SampleRate:       "__samplerate__",
                 Channels:         "__channels__",
+                StartTime:        "_start_time_",
+                EndTime:          mockTime,
                 ConversionStatus: "successful",
             },
             assertion: func(tt assert.TestingT, err error, i ...interface{}) bool {
@@ -110,6 +121,8 @@ func TestJobConverterRun(t *testing.T) {
                 Bitrate:          "__bitrate__",
                 SampleRate:       "__samplerate__",
                 Channels:         "__channels__",
+                StartTime:        "_start_time_",
+                EndTime:          mockTime,
                 ConversionStatus: "failed",
             },
             assertion: func(tt assert.TestingT, err error, i ...interface{}) bool {
@@ -142,16 +155,11 @@ func TestJobConverterRun(t *testing.T) {
             sut := services.JobConverter{
                 IsFileExist: tc.fields.FileChecker,
                 CmdRunner:   tc.fields.CmdRunner,
+                TimeProvider: mockTimeProvider,
             }
 
-            res, err := sut.Run(tc.jsonConfig, "")
-            assert.Equal(t, tc.expected.InputFile, res.InputFile)
-            assert.Equal(t, tc.expected.OutputFile, res.OutputFile)
-            assert.Equal(t, tc.expected.Codec, res.Codec)
-            assert.Equal(t, tc.expected.Bitrate, res.Bitrate)
-            assert.Equal(t, tc.expected.SampleRate, res.SampleRate)
-            assert.Equal(t, tc.expected.Channels, res.Channels)
-            assert.Equal(t, tc.expected.ConversionStatus, res.ConversionStatus)
+            res, err := sut.Run(tc.jsonConfig, tc.expected.StartTime)
+            assert.Equal(t, tc.expected, res)
             tc.assertion(t, err)
         })
     }

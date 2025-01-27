@@ -98,16 +98,19 @@ type FileChecker func(path string) bool
 type CmdRunner interface {
 	Run(name string, args []string) error
 }
+type TimeProvider func() time.Time
 
 type JobConverter struct {
 	IsFileExist FileChecker
 	CmdRunner   CmdRunner
+	TimeProvider TimeProvider
 }
 
 func NewJobConverter() JobConverter {
 	return JobConverter{
 		IsFileExist: helpers.IsFileExist,
 		CmdRunner:   cmdRunner{},
+		TimeProvider: time.Now,
 	}
 }
 
@@ -140,6 +143,8 @@ func (j JobConverter) Run(jsonConfig models.ConversionConfig, startTime string) 
 		conversionStatus = "successful"
 	}
 
+	endTime := j.TimeProvider().Format(time.RFC3339)
+
 	// Prepare conversion record
 	conversionRecord := models.ConversionRecord{
 		InputFile:        jsonConfig.InputFile,
@@ -150,7 +155,7 @@ func (j JobConverter) Run(jsonConfig models.ConversionConfig, startTime string) 
 		Channels:         jsonConfig.Channels,
 		ConversionStatus: conversionStatus,
 		StartTime:        startTime,
-		EndTime:          time.Now().Format(time.RFC3339),
+		EndTime:          endTime,
 	}
 
 	return conversionRecord, nil
