@@ -73,6 +73,8 @@ func main() {
 		}
 	}()
 
+	recordMetrics()
+
 	log.Printf("Starting server on %s", *port)
 	err = http.ListenAndServe(*port, appDep.routes())
 	log.Fatal(err)

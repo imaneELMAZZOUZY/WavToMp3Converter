@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/imaneELMAZZOUZY/WavToMp3Converter/internal/models"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 func isFileExist(path string) bool {
@@ -36,4 +38,20 @@ func jsonToStruct(filepath string) (models.ConversionConfig, error) {
 	}
 
 	return config, fmt.Errorf("failed to open file after many retries")
+}
+
+var (
+	opsProcessed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "wavtomp3converter_processed_ops_total",
+		Help: "The total number of processed events",
+	})
+)
+
+func recordMetrics() {
+	go func() {
+		for {
+			opsProcessed.Inc()
+			time.Sleep(2 * time.Second)
+		}
+	}()
 }
